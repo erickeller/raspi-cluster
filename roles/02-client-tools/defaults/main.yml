@@ -1,0 +1,6 @@
+---
+target_architecture: "{{ ansible_architecture | regex_replace('^(arm|amd64|i386).*$', '\\1') }}"
+pki_base_url: https://pkg.cfssl.org
+pki_revision: R1.2
+pki_binaries: [cfssl, cfssljson]
+pki_binaries_checksum_file: SHA256SUMS

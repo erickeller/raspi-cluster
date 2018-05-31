@@ -1,0 +1,9 @@
+---
+- name: Download PKI binaries
+  get_url:
+    url: "{{ pki_base_url }}/{{ pki_revision }}/{{ item }}_{{ ansible_system | lower }}-{{ target_architecture }}"
+    dest: "/usr/local/bin/{{ item }}"
+    mode: 0755
+  become: yes
+  with_items: "{{ pki_binaries }}"
+#    checksum: sha256:
