@@ -4,3 +4,8 @@ pki_base_url: https://pkg.cfssl.org
 pki_revision: R1.2
 pki_binaries: [cfssl, cfssljson]
 pki_binaries_checksum_file: SHA256SUMS
+
+# k8 client
+k8_client_base_url: https://storage.googleapis.com/kubernetes-release/release
+k8_client_version: v1.10.2
+k8_client_binary: kubectl

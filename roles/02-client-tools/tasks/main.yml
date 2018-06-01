@@ -7,3 +7,10 @@
   become: yes
   with_items: "{{ pki_binaries }}"
 #    checksum: sha256:
+
+- name: Download kubectl
+  get_url:
+    url: "{{ k8_client_base_url }}/{{ k8_client_version }}/bin/{{ ansible_system | lower}}/{{ target_architecture }}/{{ k8_client_binary }}"
+    dest: "/usr/local/bin/{{ k8_client_binary }}"
+    mode: 0755
+  become: yes
