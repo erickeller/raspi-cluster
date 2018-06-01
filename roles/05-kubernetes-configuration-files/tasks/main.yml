@@ -1,0 +1,98 @@
+---
+- name: kubelet Kubernetes Configuration set-cluster
+  shell: |
+    kubectl config set-cluster kubernetes-the-hard-way \
+      --certificate-authority=ca.pem \
+      --embed-certs=true \
+      --server=https://{{ load_balancer_fronting_ip }}:6443 \
+      --kubeconfig={{ ansible_hostname }}.kubeconfig
+  when: inventory_hostname in groups['nodes']
+
+- name: Kubernetes Configuration set-credentials 
+  shell: |
+    kubectl config set-credentials system:node:{{ ansible_hostname }} \
+      --client-certificate={{ansible_hostname }}.pem \
+      --client-key={{ ansible_hostname }}-key.pem \
+      --embed-certs=true \
+      --kubeconfig={{ ansible_hostname }}.kubeconfig
+  when: inventory_hostname in groups['nodes']
+
+- name: Kubernetes Configuration set-context default
+  shell: |
+    kubectl config set-context default \
+      --cluster=kubernetes-the-hard-way \
+      --user=system:node:{{ ansible_hostname }} \
+      --kubeconfig={{ ansible_hostname }}.kubeconfig
+  when: inventory_hostname in groups['nodes']
+
+- name: Kubernetes Configuration use-context default
+  shell: kubectl config use-context default --kubeconfig={{ ansible_hostname }}.kubeconfig
+  when: inventory_hostname in groups['nodes']
+
+- name: Kubernetes Configuration set-cluster for kube-proxy
+  shell: |
+    kubectl config set-cluster kubernetes-the-hard-way \
+      --certificate-authority=ca.pem \
+      --embed-certs=true \
+      --server=https://{{ load_balancer_fronting_ip }}:6443 \
+      --kubeconfig=kube-proxy.kubeconfig
+  when: inventory_hostname in groups['masters']
+
+- name: Kubernetes Configuration set-cluster for kube-controller-manager, kube-scheduler, admin
+  shell: |
+    kubectl config set-cluster kubernetes-the-hard-way \
+      --certificate-authority=ca.pem \
+      --embed-certs=true \
+      --server=https://127.0.0.1:6443 \
+      --kubeconfig={{ item }}.kubeconfig
+  with_items:
+    - kube-controller-manager
+    - kube-scheduler
+    - admin
+  when: inventory_hostname in groups['masters']
+
+- name: kube-proxy Kubernetes Configuration set-credentials for kube-proxy, kube-controller-manager kube-scheduler, admin
+  shell: | 
+    kubectl config set-credentials system:{{ item }} \
+      --client-certificate={{ item }}.pem \
+      --client-key={{ item }}-key.pem \
+      --embed-certs=true \
+      --kubeconfig={{ item }}.kubeconfig
+  with_items:
+    - kube-proxy
+    - kube-controller-manager
+    - kube-scheduler
+    - admin
+  when: inventory_hostname in groups['masters']
+
+- name: Kubernetes Configuration set-context for kube-proxy, kube-controller-manager kube-scheduler, admin
+  shell: | 
+    kubectl config set-context default \
+      --cluster=kubernetes-the-hard-way \
+      --user=system:{{ item }} \
+      --kubeconfig={{ item }}.kubeconfig
+  with_items:
+    - kube-proxy
+    - kube-controller-manager
+    - kube-scheduler
+    - admin
+  when: inventory_hostname in groups['masters']
+
+- name: kube-proxy Kubernetes Configuration use-context
+  shell: kubectl config use-context default --kubeconfig={{ item }}.kubeconfig
+  with_items:
+    - kube-proxy
+    - kube-controller-manager
+    - kube-scheduler
+    - admin
+  when: inventory_hostname in groups['masters']
+
+- name: synchronize the kube-proxy configuration to all nodes
+  synchronize:
+    src: "{{ ansible_user_dir }}/kube-proxy.kubeconfig"
+    dest: "{{ ansible_user_dir }}/kube-proxy.kubeconfig"
+  delegate_to: master
+  use_ssh_args: yes
+  verify_host: no
+  private_key: "{{ ansible_user_dir }}/.ssh/id_rsa"
+  when: inventory_hostname in groups['nodes']
