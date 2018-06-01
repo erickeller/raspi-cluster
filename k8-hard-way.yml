@@ -6,3 +6,4 @@
     - 03-compute-resources
     - 04-certificate-authority
     - 05-kubernetes-configuration-files
+    - 06-data-encryption-keys
