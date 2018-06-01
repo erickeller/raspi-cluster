@@ -9,3 +9,14 @@
     state: present
     key: "{{ lookup('file', '{{ role_path }}/files/ssh/id_rsa.pub') }}"
   when: key_file.stat.exists == true
+
+- name: Deploy unsecure private key
+  copy:
+    src: "{{ role_path }}/files/ssh/id_rsa"
+    dest: "{{ ansible_user_dir }}/.ssh/id_rsa"
+    mode: 0600
+
+- name: install rsync to use synchronize module
+  apt:
+    name: rsync
+  become: yes
