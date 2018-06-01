@@ -1,0 +1,11 @@
+---
+- name: check for public key
+  local_action: stat path="{{ role_path }}/files/ssh/id_rsa.pub"
+  register: key_file
+
+- name: Deploy ssh-keys
+  authorized_key:
+    user: "{{ ansible_user_id }}"
+    state: present
+    key: "{{ lookup('file', '{{ role_path }}/files/ssh/id_rsa.pub') }}"
+  when: key_file.stat.exists == true

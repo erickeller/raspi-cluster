@@ -3,3 +3,8 @@
   gather_facts: True
   roles:
     - 02-client-tools
+
+- hosts: all
+  gather_facts: True
+  roles:
+    - 03-compute-resources
