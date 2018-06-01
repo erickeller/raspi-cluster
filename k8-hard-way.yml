@@ -4,3 +4,4 @@
   roles:
     - 02-client-tools
     - 03-compute-resources
+    - 04-certificate-authority

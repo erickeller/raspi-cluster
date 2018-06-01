@@ -1,0 +1,16 @@
+{
+  "CN": "system:node:{{ ansible_hostname }}",
+  "key": {
+    "algo": "{{ key_algo }}",
+    "size": {{ key_size }}
+  },
+  "names": [
+    {
+      "C": "{{ country_code }}",
+      "L": "{{ country_location }}",
+      "O": "system:nodes",
+      "OU": "Kubernetes The Hard Way",
+      "ST": "{{ country_state }}"
+    }
+  ]
+}

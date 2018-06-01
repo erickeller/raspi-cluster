@@ -1,0 +1,11 @@
+---
+expiry_hours: 8760
+
+key_algo: rsa
+key_size: 2048
+
+country_code: CH
+country_location: Zug
+country_state_short: ZG
+country_state: Zug
+

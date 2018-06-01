@@ -1,0 +1,114 @@
+---
+- name: Deploy ca-config
+  template:
+    src: "ca-config.json.j2"
+    dest: "/tmp/ca-config.json"
+
+- name: Deploy masters ca
+  template:
+    src: "{{ item }}"
+    dest: "/tmp/{{ item | regex_replace('.j2') }}"
+  with_items:
+    - ca-csr.json.j2
+    - admin-csr.json.j2
+    - kube-controller-manager-csr.json.j2
+    - kube-proxy-csr.json.j2
+    - kube-scheduler-csr.json.j2
+    - kubernetes-csr.json.j2
+    - service-account-csr.json.j2
+  when: inventory_hostname in groups['masters']
+
+- name: Deploy workers ca
+  template:
+    src: "workers-csr.json.j2"
+    dest: "/tmp/{{ ansible_hostname }}-csr.json"
+  when: inventory_hostname in groups['nodes']
+
+- name: generate initial ca
+  shell: cfssl gencert -config=/tmp/ca-config.json -initca /tmp/ca-csr.json | cfssljson -bare ca
+  when: inventory_hostname in groups['masters']
+
+- name: generate admin client ca
+  shell: |
+    cfssl gencert \
+      -ca=ca.pem \
+      -ca-key=ca-key.pem \
+      -config=/tmp/ca-config.json \
+      -profile=kubernetes \
+      /tmp/admin-csr.json | cfssljson -bare admin
+  when: inventory_hostname in groups['masters']
+
+- name: synchronize the initial ca to all nodes
+  synchronize:
+    src: "{{ ansible_user_dir }}/{{ item }}"
+    dest: "{{ ansible_user_dir }}/{{ item }}"
+  delegate_to: master
+  use_ssh_args: yes
+  verify_host: no
+  private_key: "{{ ansible_user_dir }}/.ssh/id_rsa"
+  with_items:
+    - ca.pem
+    - ca-key.pem
+  when: inventory_hostname in groups['nodes']
+
+- name: generate kubelet client certificates
+  shell: |
+    cfssl gencert \
+      -ca=ca.pem \
+      -ca-key=ca-key.pem \
+      -config=/tmp/ca-config.json \
+      -hostname={{ ansible_hostname }},{{ ansible_default_ipv4.address }} \
+      -profile=kubernetes \
+      /tmp/{{ ansible_hostname }}-csr.json | cfssljson -bare {{ ansible_hostname }}
+  when: inventory_hostname in groups['nodes']
+
+- name: generate Controller Manager Client ca
+  shell: |
+    cfssl gencert \
+      -ca=ca.pem \
+      -ca-key=ca-key.pem \
+      -config=/tmp/ca-config.json \
+      -profile=kubernetes \
+      /tmp/kube-controller-manager-csr.json | cfssljson -bare kube-controller-manager
+  when: inventory_hostname in groups['masters']
+
+- name: generate Kube Proxy Client ca
+  shell: |
+    cfssl gencert \
+      -ca=ca.pem \
+      -ca-key=ca-key.pem \
+      -config=/tmp/ca-config.json \
+      -profile=kubernetes \
+      /tmp/kube-proxy-csr.json | cfssljson -bare kube-proxy
+  when: inventory_hostname in groups['masters']
+
+- name: generate Scheduler Client ca
+  shell: |
+    cfssl gencert \
+      -ca=ca.pem \
+      -ca-key=ca-key.pem \
+      -config=/tmp/ca-config.json \
+      -profile=kubernetes \
+      /tmp/kube-scheduler-csr.json | cfssljson -bare kube-scheduler
+  when: inventory_hostname in groups['masters']
+
+- name: generate Kubernetes API Server ca
+  shell: |
+    cfssl gencert \
+      -ca=ca.pem \
+      -ca-key=ca-key.pem \
+      -config=/tmp/ca-config.json \
+      -hostname={{ ansible_hostname }},{{ ansible_default_ipv4.address }},127.0.0.1,kubernetes.default \
+      -profile=kubernetes \
+      /tmp/kubernetes-csr.json | cfssljson -bare kubernetes
+  when: inventory_hostname in groups['masters']
+
+- name: generate Service Account ca
+  shell: |
+    cfssl gencert \
+      -ca=ca.pem \
+      -ca-key=ca-key.pem \
+      -config=/tmp/ca-config.json \
+      -profile=kubernetes \
+      /tmp/service-account-csr.json | cfssljson -bare service-account
+  when: inventory_hostname in groups['masters']

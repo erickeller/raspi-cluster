@@ -1,0 +1,16 @@
+{
+  "CN": "system:kube-controller-manager",
+  "key": {
+    "algo": "{{ key_algo }}",
+    "size": {{ key_size }}
+  },
+  "names": [
+    {
+      "C": "{{ country_code }}",
+      "L": "{{ country_location }}",
+      "O": "system:kube-controller-manager",
+      "OU": "Kubernetes The Hard Way",
+      "ST": "{{ country_state }}"
+    }
+  ]
+}
